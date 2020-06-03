@@ -1,0 +1,2 @@
+# flutterAppServer
+flutter微校园APP的服务端程序，基于Springboot搭建
