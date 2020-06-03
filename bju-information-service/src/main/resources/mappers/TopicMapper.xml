@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hzwei.bju.model.mapper.TopicMapper" >
+
+    <!--按照模块ID获取话题-->
+    <select id="getTopicsByModuleId" resultType="string">
+        select topic_name from topic where topic.module_id = #{moduleId} and topic.topic_status = 0
+    </select>
+
+
+
+
+
+
+
+</mapper>

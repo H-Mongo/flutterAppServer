@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hzwei.bju.model.mapper.FacultyMapper" >
+
+    <!-- 查找指定院系专业名称一定的院系专业ID号 -->
+    <select id="getFacultyIdAndSpeicaltyIdWithName" resultType="map">
+
+        select
+            f.faculty_id facultyId,
+            s.specialty_id specialtyId
+        from faculty f left join specialty s
+        on f.faculty_id =s.faculty_id
+        where f.faculty_name = #{facultyName} and s.specialty_name = #{specialtyName}
+
+    </select>
+
+    <!-- 查找院系下所有的专业 -->
+    <select id="getAllFacultyAndSpecial" resultMap="allFacultyAndSpecialMap">
+        select
+            f.faculty_name facultyName,
+            s.specialty_name specialtyName
+        from faculty f left join specialty s
+        on f.faculty_id =s.faculty_id
+        where f.faculty_status = 0
+        order by f.faculty_id asc
+    </select>
+
+    <resultMap id="allFacultyAndSpecialMap" type="top.hzwei.bju.model.vo.FacultyAndSpecialtyVO">
+        <result column="facultyName" property="facultyName"/>
+        <collection property="specialtyNames" ofType="string" column="specialtyName">
+            <result column="specialtyName"/>
+        </collection>
+    </resultMap>
+
+
+
+
+
+</mapper>

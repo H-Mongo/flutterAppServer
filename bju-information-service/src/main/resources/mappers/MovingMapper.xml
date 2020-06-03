@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hzwei.bju.model.mapper.MovingMapper" >
+
+    <!-- 发布动态（插入数据） -->
+    <insert id="publishMoving" parameterType="top.hzwei.bju.model.entry.Moving">
+        insert into moving(
+            moving_imgs,moving_content,moving_type,topics,moving_like,moving_like_user,moving_browse,
+            moving_author,user_id,comment_count,moving_status,publish_location,create_time,update_time
+        )
+        values(
+            #{movingImgs},#{movingContent},#{movingType},#{topics},0,null,0,
+            #{movingAuthor},#{userId},0,0,#{publishLocation},NOW(),NOW()
+        )
+    </insert>
+
+    <!-- 保存草稿（插入数据，状态置为 1 ） -->
+<!--    <insert id="temporaryMoving" parameterType="top.hzwei.bju.model.entry.Moving">-->
+<!--        insert into moving(-->
+<!--            moving_imgs,moving_content,moving_type,topics,moving_like,moving_like_user,moving_browse,-->
+<!--            moving_author,user_id,comment_count,moving_status,publish_location,create_time,update_time-->
+<!--        )-->
+<!--        values(-->
+<!--            #{movingImgs},#{movingContent},#{movingType},#{topics},#{movingLike},#{movingLikeUser},#{movingBrowse},-->
+<!--            #{movingAuthor},#{userId},#{commentCount},1,#{publishLocation},NOW(),NOW()-->
+<!--        )-->
+<!--    </insert>-->
+
+    <!-- 发布草稿箱中的动态（修改状态为 0 ） -->
+<!--    <update id="republishMoving">-->
+<!--        update moving set moving_status = 0 where moving_id = #{movingId} and moving_status = 1-->
+<!--    </update>-->
+
+    <!-- 获取最新的动态信息 -->
+    <select id="queryPublishedMovingsWithNew" resultType="top.hzwei.bju.model.vo.MovingVO">
+
+        select
+            u1.user_id movingAuthorId,
+            u1.user_avatar movingAuthorAvatar,
+            u1.user_nickname movingAuthorName,
+            u1.user_mobile movingAuthorPhone,
+            m.moving_content movingContent,
+            m.moving_id movingId,
+            m.moving_imgs movingImages,
+            (case m.moving_type
+            when 1 then '表白墙'
+            when 2 then '万能墙'
+            when 3 then '谏言贴'
+            when 4 then '兼职汇'
+            else '错误类型'
+            end) movingType,
+            m.topics movingTopics,
+            m.moving_like movingLike,
+            m.moving_like_user movingLikeUsers,
+            m.moving_browse movingBrowse,
+            COUNT(c1.comment_id) movingCommentCount,
+            m.update_time movingCreateTime
+        from
+        moving m
+        left join `user` u1
+        on m.user_id = u1.user_id
+        left join `comment` c1
+        on m.moving_id = c1.moving_id
+        where m.moving_status = 0
+        group by m.moving_id
+        order by m.update_time desc
+    </select>
+
+    <!-- 获取已发布热门动态 (热门的标准：点赞量，评论量，浏览量其中之一大于30即可)-->
+    <select id="queryPublishedMovingsWithHot" resultType="top.hzwei.bju.model.vo.MovingVO">
+        select
+            u1.user_id movingAuthorId,
+            u1.user_avatar movingAuthorAvatar,
+            u1.user_nickname movingAuthorName,
+            u1.user_mobile movingAuthorPhone,
+            m.moving_content movingContent,
+            m.moving_id movingId,
+            m.moving_imgs movingImages,
+            (case m.moving_type
+            when 1 then '表白墙'
+            when 2 then '万能墙'
+            when 3 then '谏言贴'
+            when 4 then '兼职汇'
+            else '错误类型'
+            end) movingType,
+            m.topics movingTopics,
+            m.moving_like movingLike,
+            m.moving_like_user movingLikeUsers,
+            m.moving_browse movingBrowse,
+            COUNT(c1.comment_id) movingCommentCount,
+            m.update_time movingCreateTime
+        from
+        moving m
+        left join `user` u1
+        on m.user_id = u1.user_id
+        left join `comment` c1
+        on m.moving_id = c1.moving_id
+        where m.moving_status = 0
+        group by m.moving_id
+        having m.moving_like > 30 || m.moving_browse > 30  || COUNT(c1.comment_id) > 30
+        order by m.moving_like desc,m.moving_browse desc,COUNT(c1.comment_id) desc
+    </select>
+
+    <!-- 查询指定动态的详情信息（包括评论回复信息） -->
+    <select id="selectMovingDetailsByMovingId" resultMap="movingDetailsMap">
+
+        select
+            m.moving_id movingId,
+            m.moving_content movingContent,
+            m.moving_imgs movingImages,
+            (case m.moving_type
+            when 1 then '表白墙'
+            when 2 then '万能墙'
+            when 3 then '谏言贴'
+            when 4 then '兼职汇'
+            else '错误类型'
+            end) movingType,
+            m.topics movingTopics,
+            m.moving_like movingLike,
+            m.moving_like_user movingLikeUsers,
+            m.moving_browse movingBrowse,
+            m.update_time movingCreateTime,
+            u1.user_id movingAuthorId,
+            u1.user_avatar movingAuthorAvatar,
+            u1.user_nickname movingAuthorName,
+            u1.user_mobile movingAuthorPhone,
+            c1.comment_id commentId,
+            c1.comment_content commentContent,
+            c1.comment_like commentLike,
+            c1.comment_like_user commentLikeUsers,
+            c1.create_time commentCreateTime,
+            u2.user_id commentAuthorId,
+            u2.user_avatar commentAuthorAvatar,
+            u2.user_nickname commentAuthorName,
+            u2.user_mobile commentAuthorPhone,
+            c2.comment_id parentCommentId,
+            c2.comment_content parentCommentContent,
+            c2.comment_like parentCommentLike,
+            c2.create_time parentCommentCreateTime,
+            u3.user_id parentCommentAuthorId,
+            u3.user_avatar parentCommentAuthorAvatar,
+            u3.user_nickname parentCommentAuthorName,
+            u3.user_mobile parentCommentAuthorPhone
+        from moving m
+        left join `user` u1
+        on m.user_id = u1.user_id
+        left join `comment` c1
+        on m.moving_id = c1.moving_id
+        left join `user` u2
+        on c1.comment_uid = u2.user_id
+        left join `comment` c2
+        on c1.comment_parent = c2.comment_id
+        left join `user` u3
+        on c2.comment_uid = u3.user_id
+        where m.moving_id = #{movingId}
+        order by c1.create_time desc
+
+
+    </select>
+
+    <resultMap id="movingDetailsMap" type="top.hzwei.bju.model.vo.MovingDetailsVO">
+
+        <id column="movingId" property="movingId"/>
+        <result column="movingContent" property="movingContent"/>
+        <result column="movingImages" property="movingImages"/>
+        <result column="movingType" property="movingType"/>
+        <result column="movingTopics" property="movingTopics"/>
+        <result column="movingLike" property="movingLike"/>
+        <result column="movingLikeUsers" property="movingLikeUsers"/>
+        <result column="movingBrowse" property="movingBrowse"/>
+        <result column="movingCreateTime" property="movingCreateTime"/>
+        <result column="movingAuthorId" property="movingAuthorId"/>
+        <result column="movingAuthorName" property="movingAuthorName"/>
+        <result column="movingAuthorPhone" property="movingAuthorPhone"/>
+
+        <collection property="commentReplyList" ofType="top.hzwei.bju.model.vo.MovingDetailsVO$CommentReply">
+
+            <id column="commentId" property="commentId"/>
+            <result column="commentContent" property="commentContent"/>
+            <result column="commentLike" property="commentLike"/>
+            <result column="commentLikeUsers" property="commentLikeUsers"/>
+            <result column="commentCreateTime" property="commentCreateTime"/>
+            <result column="commentAuthorId" property="commentAuthorId"/>
+            <result column="commentAuthorAvatar" property="commentAuthorAvatar"/>
+            <result column="commentAuthorName" property="commentAuthorName"/>
+            <result column="commentAuthorPhone" property="commentAuthorPhone"/>
+            <result column="parentCommentId" property="parentCommentId"/>
+            <result column="parentCommentContent" property="parentCommentContent"/>
+            <result column="parentCommentLike" property="parentCommentLike"/>
+            <result column="parentCommentCreateTime" property="parentCommentCreateTime"/>
+            <result column="parentCommentAuthorId" property="parentCommentAuthorId"/>
+            <result column="parentCommentAuthorAvatar" property="parentCommentAuthorAvatar"/>
+            <result column="parentCommentAuthorName" property="parentCommentAuthorName"/>
+            <result column="parentCommentAuthorPhone" property="parentCommentAuthorPhone"/>
+
+        </collection>
+
+    </resultMap>
+
+    <!-- 根据关键字查询动态 -->
+    <select id="fuzzySearchMovingByKeyword" resultType="map">
+        select
+            moving.moving_id id,
+            moving.moving_content content,
+            moving.moving_like likeCount,
+            moving.update_time time,
+            moving.moving_author author
+        from
+            moving
+        where
+            moving.moving_content like CONCAT('%',#{searchKeyword},'%') ||
+            moving.topics like CONCAT('%',#{searchKeyword},'%') ||
+            moving.moving_author like CONCAT('%',#{searchKeyword},'%')
+    </select>
+
+    <!-- 按照模块ID查询动态 -->
+    <select id="queryMovingByModuleId" resultType="top.hzwei.bju.model.vo.MovingVO">
+        select
+            u1.user_id movingAuthorId,
+            u1.user_avatar movingAuthorAvatar,
+            u1.user_nickname movingAuthorName,
+            u1.user_mobile movingAuthorPhone,
+            m.moving_content movingContent,
+            m.moving_id movingId,
+            m.moving_imgs movingImages,
+            (case m.moving_type
+                 when 1 then '表白墙'
+                 when 2 then '万能墙'
+                 when 3 then '谏言贴'
+                 when 4 then '兼职汇'
+                 else '错误类型'
+                end) movingType,
+            m.topics movingTopics,
+            m.moving_like movingLike,
+            m.moving_like_user movingLikeUsers,
+            m.moving_browse movingBrowse,
+            COUNT(c1.comment_id) movingCommentCount,
+            m.update_time movingCreateTime
+        from
+            moving m
+                left join `user` u1
+                          on m.user_id = u1.user_id
+                left join `comment` c1
+                          on m.moving_id = c1.moving_id
+        where m.moving_status = 0 and m.moving_type = #{moduleId}
+        group by m.moving_id
+        order by m.update_time desc
+    </select>
+
+    <!-- 浏览量数据更新 （数据自增1）-->
+    <update id="updateBrowseCountByMovingId">
+        update
+            moving
+        set
+            moving.moving_browse = moving.moving_browse + 1
+        where moving.moving_id = #{movingId}
+    </update>
+
+    <!-- 点赞量（数据自增1）及点赞用户列表（拼接点赞用户ID）更新 -->
+    <update id="updateLikeCountByMovingId">
+        update
+            moving
+        set
+            moving.moving_like = moving.moving_like + 1,
+            moving.moving_like_user = CONCAT_WS(',', moving.moving_like_user, #{likeUserId})
+        where moving.moving_id = #{movingId}
+    </update>
+
+    <!-- 查询指定用户的所有已发布动态信息 -->
+    <select id="queryAllMovingByUserId" resultType="top.hzwei.bju.model.vo.MovingVO">
+        select
+            u1.user_id movingAuthorId,
+            u1.user_avatar movingAuthorAvatar,
+            u1.user_nickname movingAuthorName,
+            u1.user_mobile movingAuthorPhone,
+            m.moving_content movingContent,
+            m.moving_id movingId,
+            m.moving_imgs movingImages,
+            (case m.moving_type
+            when 1 then '表白墙'
+            when 2 then '万能墙'
+            when 3 then '谏言贴'
+            when 4 then '兼职汇'
+            else '错误类型'
+            end) movingType,
+            m.topics movingTopics,
+            m.moving_like movingLike,
+            m.moving_like_user movingLikeUsers,
+            m.moving_browse movingBrowse,
+            COUNT(c1.comment_id) movingCommentCount,
+            m.update_time movingCreateTime
+        from
+            moving m
+        left join `user` u1
+        on m.user_id = u1.user_id
+        left join `comment` c1
+        on m.moving_id = c1.moving_id
+        where m.moving_status = 0 and m.user_id = #{userId}
+        group by m.moving_id
+        order by m.update_time desc
+    </select>
+
+    <!-- 查询指定用户的草稿动态信息 -->
+    <select id="queryAllTemporaryMovingByUserId"  resultType="top.hzwei.bju.model.vo.MovingVO">
+        select
+            u1.user_id movingAuthorId,
+            u1.user_avatar movingAuthorAvatar,
+            u1.user_nickname movingAuthorName,
+            u1.user_mobile movingAuthorPhone,
+            m.moving_content movingContent,
+            m.moving_id movingId,
+            m.moving_imgs movingImages,
+            (case m.moving_type
+            when 1 then '表白墙'
+            when 2 then '万能墙'
+            when 3 then '谏言贴'
+            when 4 then '兼职汇'
+            else '错误类型'
+            end) movingType,
+            m.topics movingTopics,
+            m.moving_like movingLike,
+            m.moving_like_user movingLikeUsers,
+            m.moving_browse movingBrowse,
+            COUNT(c1.comment_id) movingCommentCount,
+            m.update_time movingCreateTime
+        from
+            moving m
+        left join `user` u1
+        on m.user_id = u1.user_id
+        left join `comment` c1
+        on m.moving_id = c1.moving_id
+        where m.moving_status = 1 and m.user_id = #{userId}
+        group by m.moving_id
+        order by m.update_time desc
+    </select>
+
+    <!-- 动态保存到草稿箱中 -->
+    <insert id="temporaryMoving" parameterType="top.hzwei.bju.model.entry.Moving">
+        insert into moving(
+            moving_imgs,moving_content,moving_type,topics,moving_like,moving_like_user,moving_browse,
+            moving_author,user_id,comment_count,moving_status,publish_location,create_time,update_time
+        )
+        values(
+            #{movingImgs},#{movingContent},#{movingType},#{topics},0,null,0,
+            #{movingAuthor},#{userId},0,#{movingStatus},#{publishLocation},NOW(),NOW()
+        )
+    </insert>
+
+    <!-- 重新发布动态 -->
+    <update id="republishMoving">
+        update moving set moving.moving_status = 0,moving.update_time = NOW() where moving.moving_id = #{movingId}
+    </update>
+
+    <!-- 删除动态 -->
+    <update id="deleteMoving">
+        update moving set moving.moving_status = 2,moving.update_time = NOW() where moving.moving_id = #{movingId}
+    </update>
+
+
+</mapper>

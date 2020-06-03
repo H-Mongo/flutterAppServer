@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hzwei.bju.model.mapper.CommentReplyMapper" >
+
+
+    <!-- 评论信息的插入 -->
+    <insert id="insertComment" parameterType="top.hzwei.bju.model.entry.Comment">
+        insert into comment(
+            moving_id,
+            comment_content,
+            comment_like,
+            comment_like_user,
+            comment_status,
+            comment_uid,
+            comment_author,
+            reply_moving_uid,
+            reply_moving_uname,
+            comment_parent,
+            create_time,
+            update_time
+        ) values(
+             #{movingId},
+             #{commentContent},
+             0,
+             null,
+             0,
+             #{commentUid},
+             #{commentAuthor},
+             #{replyMovingUid},
+             #{replyMovingUname},
+             #{commentParent},
+             NOW(),
+             NOW()
+            )
+    </insert>
+
+
+    <!-- 更新指定评论的点赞量及点赞用户列表 -->
+    <update id="updateCommentLikeCountAndLikeUser">
+        update
+            `comment`
+        set
+            `comment`.comment_like = `comment`.comment_like + 1,
+            `comment`.comment_like_user = CONCAT_WS(',', `comment`.comment_like_user, #{likeUserId})
+        where `comment`.comment_id = #{commentId}
+    </update>
+
+
+
+
+
+
+
+
+
+
+</mapper>
+
+
+
+
+

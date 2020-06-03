@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.hzwei.bju.model.mapper.UserMapper" >
+
+    <!-- User 表的全字段 -->
+    <sql id="userColums">
+        user_id,role_id,user_avatar,user_nickname,user_mobile,user_borth,user_address,user_hobby,user_motto,faculty_id,specialty_id,faculty_name,specialty_name
+    </sql>
+
+    <!-- 用户密码登录 -->
+    <select id="selectUserByUP" resultType="top.hzwei.bju.model.entry.User">
+        select 
+        <include refid="userColums"/>
+        from `user` where user_mobile = #{userMobile} and user_password = #{password}
+    </select>
+
+    <!-- 昵称是否存在 -->
+    <select id="existNickname" resultType="int">
+        select COUNT(DISTINCT user_id) count from `user` where user_nickname = #{nickname}
+    </select>
+
+    <!-- 手机号码是否存在 -->
+    <select id="existMobile" resultType="int">
+        select COUNT(DISTINCT user_id) count from `user` where user_mobile = #{userMobile}
+    </select>
+
+    <!-- 新用户注册，字段默认值已给出 -->
+    <insert id="registerUser">
+        insert into `user`(
+                   `user`.user_id,
+                   `user`.role_id,
+                   `user`.user_nickname,
+                   `user`.user_mobile,
+                   `user`.user_password,
+                   `user`.user_avatar,
+                   `user`.user_address,
+                   `user`.user_borth,
+                   `user`.user_hobby,
+                   `user`.user_motto,
+                   `user`.faculty_id,
+                   `user`.faculty_name,
+                   `user`.specialty_id,
+                   `user`.specialty_name
+                )
+        values(
+               DEFAULT,
+               1,
+               #{userNickName},
+               #{userMobile},
+               #{userPassword},
+               '/static/avatars/default_avatar.jpg',
+               '陕西省宝鸡市',
+               DATE_FORMAT(NOW(),'%Y-%m-%d'),
+               '睡觉',
+               '我爱宝鸡文理学院！',
+               1,
+               '计算机学院',
+               1,
+               '软件工程'
+            );
+    </insert>
+
+    <!-- 查询counts （第一版废弃，数据表发生变化）-->
+    <select id="getInfoPageAllCounts" resultType="map">
+        select
+            movingCount,likeCount,atCount
+        from
+            (select
+                u.user_id userId,
+                COUNT(DISTINCT m.moving_id) movingCount,
+                SUM(IFNULL(moving_like,0) + IFNULL(comment_like,0) + IFNULL(reply_like,0)) likeCount
+            from
+                `user` u
+            left join moving m on u.user_id = m.user_id
+            left join `comment` c on u.user_id = c.comment_uid
+            left join reply r on u.user_id = r.reply_sponsor
+            where u.user_id = 3) t1
+        left join
+            (select
+                u.user_id userId,
+                SUM(IFNULL(reply_moving_uid,0) + IFNULL(reply_receiver,0)) atCount
+            from
+                `user` u
+            left join `comment` c on u.user_id = c.reply_moving_uid
+            left join reply r on u.user_id = r.reply_receiver
+            where u.user_id = 3
+            ) t2
+        on t1.userId = t2.userId
+    </select>
+
+    <!-- 获取用户计数项（第二版） -->
+    <select id="selectCounts" resultType="map">
+        select SUM(movingCount) movingCount,SUM(likeCount) likeCount from
+        (   select COUNT(DISTINCT moving.moving_id) movingCount, SUM(IFNULL(moving.moving_like,0)) likeCount
+            from moving where moving.user_id = #{userId}
+            UNION ALL select 0, SUM(IFNULL(`comment`.comment_like,0)) likeCount
+            from `comment` where `comment`.comment_uid = #{userId}) t1
+            UNION ALL
+            select 0,COUNT(c2.comment_id) atCount
+            from `comment` c1 left join `comment` c2 on c1.comment_parent = c2.comment_id
+            where c2.comment_uid = #{userId}
+    </select>
+
+    <!-- 更新用户信息 -->
+    <update id="updateUserInfo" parameterType="top.hzwei.bju.model.entry.User">
+        update user
+        <set>
+            <if test="userNickname != null and  userNickname != ''">
+                `user`.user_nickname = #{userNickname},
+            </if>
+            <if test="userMotto != null">
+                `user`.user_motto = #{userMotto},
+            </if>
+            <if test="userHobby != null">
+                `user`.user_hobby = #{userHobby},
+            </if>
+            <if test="userBorth != null and userBorth != ''">
+                `user`.user_borth = #{userBorth},
+            </if>
+            <if test="userAddress != null and userAddress != ''">
+                `user`.user_address = #{userAddress},
+            </if>
+            <if test="fId != null">
+                `user`.faculty_id= #{fId},
+            </if>
+            <if test="fName != null and fName != ''">
+                `user`.faculty_name = #{fName},
+            </if>
+            <if test="sId != null">
+                `user`.specialty_id = #{sId},
+            </if>
+            <if test="sName != null and sName != ''">
+                `user`.specialty_name = #{sName}
+            </if>
+        </set>
+        where `user`.user_id = #{userId}
+    </update>
+
+    <!-- 模糊搜索用户信息 -->
+    <select id="userInfosFuzzySearch" resultType="map">
+        select
+               `user`.user_avatar avatar,
+               `user`.user_nickname nickname,
+               `user`.user_mobile phone,
+               `user`.user_motto motto
+        from `user`
+        where
+              `user`.user_nickname like CONCAT('%',#{keywords},'%')
+    </select>
+
+    <!-- 按照ID获取用户信息 -->
+    <select id="selectUserByUserId" resultType="top.hzwei.bju.model.entry.User">
+        select
+            `user`.user_id,
+            `user`.role_id,
+            `user`.user_avatar,
+            `user`.user_mobile,
+            `user`.user_nickname,
+            `user`.user_motto,
+            `user`.user_hobby,
+            `user`.user_borth,
+            `user`.user_address,
+            `user`.faculty_id,
+            `user`.faculty_name,
+            `user`.specialty_id,
+            `user`.specialty_name
+        from `user`
+        where `user`.user_id = #{userId}
+    </select>
+
+    <!-- 用户密码修改 -->
+    <update id="modifyUserPassword">
+        update `user` set `user`.user_password = #{newPassword} where `user`.user_mobile = #{userMobile} and `user`.user_nickname = #{userNickname}
+    </update>
+
+    <!-- 更换头像 -->
+    <update id="changeUserAvatar">
+        update `user` set `user`.user_avatar = #{avatarUrl} where `user`.user_id = #{userId}
+    </update>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</mapper>
