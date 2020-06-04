@@ -30,15 +30,17 @@ public class AliSMSUtil {
     private static final String REGION_ID = "cn-hangzhou";
     /**
      * 访问KeyID
+     * 填写自己的阿里短信访问key
      */
-    private static final String ACCESS_KEY_ID = "LTAI4Fuo6QrxsNAxNf5Vf7JC";
+    private static final String ACCESS_KEY_ID = "your access key id";
     /**
      * 访问秘钥
+     * 填写自己的阿里短信秘钥以及模板信息
      */
-    private static final String ACCESS_SECRET = "NwmE5Gdiz5ahRqcEFvChCi5UPlaZpJ";
+    private static final String ACCESS_SECRET = "your access secret";
     private static final String SYS_DOMAIN = "dysmsapi.aliyuncs.com";
     private static final String SIGN_NAME = "BJU信息平台";
-    private static final String TEMPLATE_CODE = "SMS_184221150";
+    private static final String TEMPLATE_CODE = "your template code";
 
 
     /**
