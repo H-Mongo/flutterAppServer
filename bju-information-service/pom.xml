@@ -101,7 +101,7 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
-			<version>8.0.16</version>
+			<version>8.0.28</version>
 		</dependency>
 		<!--数据源druid-->
 		<dependency>
@@ -149,7 +149,7 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
-			<version>1.2.61</version>
+			<version>1.2.83</version>
 		</dependency>
 		<!-- JWT -->
 		<dependency>
